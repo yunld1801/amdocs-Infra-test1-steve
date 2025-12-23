@@ -4,26 +4,25 @@
 launch.sh
 
 # ==========================================
-# PART 1. Kubernetes 시나리오 (초급용 6개)
+# PART 1. Kubernetes 시나리오 (이름 난독화)
 # ==========================================
 cat <<EOF > /root/broken-k8s.yaml
-# [문제 1] OOMKilled (메모리 부족)
-# 원인: Limit이 너무 작음
+# [문제 1] OOMKilled
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sre-test-01
   labels:
-    app: stress-test
+    app: test-01
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: stress-test
+      app: test-01
   template:
     metadata:
       labels:
-        app: stress-test
+        app: test-01
     spec:
       containers:
       - name: stress-container
@@ -35,22 +34,21 @@ spec:
             memory: "100Mi"
 ---
 # [문제 2] Liveness Probe 실패
-# 원인: 포트가 다름 (80 vs 8080)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sre-test-02
   labels:
-    app: nginx-broken-probe
+    app: test-02
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nginx-broken-probe
+      app: test-02
   template:
     metadata:
       labels:
-        app: nginx-broken-probe
+        app: test-02
     spec:
       containers:
       - name: nginx
@@ -64,23 +62,22 @@ spec:
           initialDelaySeconds: 2
           periodSeconds: 3
 ---
-# [문제 3 - 신규] 리소스 요청 과다 (Pending)
-# 원인: 노드 CPU는 2개인데 100개를 요구함
+# [문제 3] CPU 요청 과다
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sre-test-03
   labels:
-    app: heavy-app
+    app: test-03
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: heavy-app
+      app: test-03
   template:
     metadata:
       labels:
-        app: heavy-app
+        app: test-03
     spec:
       containers:
       - name: nginx
@@ -89,121 +86,104 @@ spec:
           requests:
             cpu: "100" 
 ---
-# [문제 4] 명령어 오타 (CrashLoopBackOff)
-# 원인: sleeeeeeeeep 오타
+# [문제 4] 명령어 오타
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sre-test-04
   labels:
-    app: typo-app
+    app: test-04
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: typo-app
+      app: test-04
   template:
     metadata:
       labels:
-        app: typo-app
+        app: test-04
     spec:
       containers:
       - name: busybox
         image: busybox
         command: ["sleeeeeeeeep", "3600"]
 ---
-# [문제 5] 이미지 태그 오류 (ImagePullBackOff)
-# 원인: 존재하지 않는 태그
+# [문제 5] 이미지 태그 오류
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sre-test-05
   labels:
-    app: wrong-image
+    app: test-05
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: wrong-image
+      app: test-05
   template:
     metadata:
       labels:
-        app: wrong-image
+        app: test-05
     spec:
       containers:
       - name: nginx
         image: nginx:1.99.9-beta-invalid
 ---
-# [문제 6 - 신규] 노드 스케줄링 불가 (Pending)
-# 원인: 노드가 Cordon 되어 있음 (문제 세팅 단계에서 설정)
+# [문제 6] 노드 Cordon
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sre-test-06
   labels:
-    app: maintenance-app
+    app: test-06
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: maintenance-app
+      app: test-06
   template:
     metadata:
       labels:
-        app: maintenance-app
+        app: test-06
     spec:
       containers:
       - name: nginx
         image: nginx:alpine
 EOF
 
-# 1. 워커 노드 하나를 Cordon 처리 (스케줄링 금지)하여 문제 6번 유발
-# (Killercoda 환경에 따라 node01이 없을 수도 있으므로 체크)
+# 노드 Cordon 설정 (문제 6번용)
 NODE_NAME=$(kubectl get nodes -o name | grep node01 | cut -d/ -f2)
 if [ -z "$NODE_NAME" ]; then
-  # node01이 없으면 controlplane이라도 cordon
   kubectl cordon controlplane
 else
   kubectl cordon $NODE_NAME
 fi
 
-# 2. K8s 문제 배포
+# 배포 실행
 kubectl apply -f /root/broken-k8s.yaml
 
-
 # ==========================================
-# PART 2. Linux 시나리오 (초급용)
+# PART 2. Linux 시나리오 세팅
 # ==========================================
-
 mkdir -p /root/linux-quiz
 
-# 리눅스 문제 세팅 스크립트 생성
 cat <<'EOF' > /root/linux-quiz/setup_linux_problems.sh
 #!/bin/bash
 
-# [Linux 문제 1] 권한 문제
-# 실행 권한 제거
+# 1. 권한 문제
 echo '#!/bin/bash' > /root/linux-quiz/start_app.sh
-echo 'echo "Application Started Successfully!"' >> /root/linux-quiz/start_app.sh
+echo 'echo "Application Started!"' >> /root/linux-quiz/start_app.sh
 chmod 644 /root/linux-quiz/start_app.sh 
 
-# [Linux 문제 2] CPU 과부하 프로세스 (좀비/Hang)
-# yes 명령어로 CPU 100% 유발 (백그라운드)
+# 2. CPU 과부하 (Process 이름 숨김 없이 yes 사용)
 nohup yes > /dev/null 2>&1 &
-echo "CPU Load Generated. Find the process and kill it." > /root/linux-quiz/cpu_alert.log
 
-# [Linux 문제 3] Disk Full (대용량 파일)
-# 3GB짜리 더미 파일을 숨겨진 경로에 생성
-# (실제 Full은 위험하므로 큰 파일을 찾는 것으로 대체)
+# 3. Disk Full (대용량 파일 생성)
 mkdir -p /var/log/.archive
 dd if=/dev/zero of=/var/log/.archive/backup_2024.dump bs=1M count=3000 status=none
-
-echo "Linux problems setup complete."
 EOF
 
-# 스크립트 실행
 chmod +x /root/linux-quiz/setup_linux_problems.sh
 /root/linux-quiz/setup_linux_problems.sh
 
-# 완료 로그
-echo "All Beginner scenarios deployed at $(date)" >> /root/setup_log.txt
+echo "Setup Complete: $(date)" >> /root/setup_log.txt
