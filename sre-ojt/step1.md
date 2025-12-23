@@ -10,21 +10,19 @@ Applications in the cluster are failing to start. Troubleshoot the cluster and r
 **Q4. sre-test-04**: Pod is stuck in pending state.
 **Q5. sre-test-05**: Pod enters error state.
 
----
-
 ## Part 2. Linux (Chained Scenarios)
 Navigate to `/root/linux-quiz` and solve the issues in order.
 
 **Q1. Permission Denied**
 Attempt to start the application using exactly this command: `./start_app.sh`
-* **Symptom**: The command fails with `Permission denied`.
-* **Constraint**: Do not use `sh` or `bash` to run the script.
-* **Goal**: Fix the file permissions and execute the script successfully.
+**Symptom**: The command fails with `Permission denied`.
+**Constraint**: Do not use `sh` or `bash` to run the script.
+**Goal**: Fix the file permissions and execute the script successfully.
 
 **Q2. Disk Cleanup**
 Upon successful execution of Task 1, the script generates a large hidden cache file (approx. **5GB**).
-* **Symptom**: Disk usage in `/var` has increased significantly.
-* **Goal**: Locate the hidden large file within the `/var` directory and delete it. (Hint: The file name starts with `.`)
+**Symptom**: Disk usage in `/var` has increased significantly.
+**Goal**: Locate the hidden large file within the `/var` directory and delete it. (Hint: The file name starts with `.`)
 
 ---
 
@@ -37,3 +35,4 @@ Additionally, run the following commands and attach a screenshot of your termina
 2. `kubectl get pods`
 
 _Made by Steve_
+
