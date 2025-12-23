@@ -162,43 +162,46 @@ fi
 # 배포 실행
 kubectl apply -f /root/broken-k8s.yaml
 
+# ... (Part 1 Kubernetes는 그대로 유지) ...
+
 # ====================================================
 # PART 2. Linux Scenarios Setup (Chain Problem)
 # ====================================================
 
 mkdir -p /root/linux-quiz
 
-# [시나리오]
-# start_app.sh를 만들지만 실행 권한을 뺌 (chmod 644)
-# 이 스크립트가 실행되면 /var/log/app_cache 에 5GB 파일을 몰래 생성함
-
+# start_app.sh 생성
 cat <<'EOF' > /root/linux-quiz/start_app.sh
 #!/bin/bash
+
+# [TRAP] 실행 권한 확인 (sh ./start_app.sh 방지용)
+if [ ! -x "$0" ]; then
+  echo "-bash: $0: Permission denied"
+  exit 126
+fi
 
 echo "[INFO] Starting Application..."
 echo "[INFO] Loading configurations..."
 sleep 1
 
-# 몰래 대용량 파일 생성 (함정 발동)
-# 경로: /var/log/app_cache/.temp_data_v1.img (숨김 파일)
+# 몰래 대용량 파일 생성 (경로 숨김)
+# 경로: /var/log/app_cache/.temp_data_v1.img
 mkdir -p /var/log/app_cache
 echo "[WARN] Generating initial cache data..."
 
-# fallocate로 5GB 생성 (실패 시 dd 사용)
-if fallocate -l 5G /var/log/app_cache/.temp_data_v1.img 2>/dev/null; then
-    echo "[INFO] Cache initialized."
-else
-    echo "[INFO] Initializing legacy cache..."
-    dd if=/dev/zero of=/var/log/app_cache/.temp_data_v1.img bs=1M count=5120 status=none
-fi
+# [수정] fallocate 제거 -> dd로 강제 쓰기 (3GB)
+# if=/dev/zero (0으로 채움), bs=1M (단위), count=3072 (3GB)
+# 만약 5GB를 원하면 count=5120 으로 변경하세요.
+dd if=/dev/zero of=/var/log/app_cache/.temp_data_v1.img bs=1M count=5120 status=progress
 
+echo ""
 echo "[SUCCESS] Application started successfully!"
 echo "------------------------------------------------"
 echo "Warning: Disk usage has increased significantly."
 EOF
 
-# [핵심] 실행 권한 제거 (Owner: RW, Group: R, Other: R)
-# 루트 유저라도 실행 권한(x)이 없으면 ./start_app.sh 실행 시 Permission denied 발생함
+# 권한 설정 (실행 권한 뺌)
 chmod 644 /root/linux-quiz/start_app.sh
 
+# 완료 로그
 echo "Linux environment configured at $(date)" >> /root/setup_log.txt
