@@ -162,29 +162,43 @@ fi
 # 배포 실행
 kubectl apply -f /root/broken-k8s.yaml
 
-# ==========================================
-# PART 2. Linux 시나리오 세팅
-# ==========================================
+# ====================================================
+# PART 2. Linux Scenarios Setup (Chain Problem)
+# ====================================================
+
 mkdir -p /root/linux-quiz
 
-cat <<'EOF' > /root/linux-quiz/setup_linux_problems.sh
+# [시나리오]
+# start_app.sh를 만들지만 실행 권한을 뺌 (chmod 644)
+# 이 스크립트가 실행되면 /var/log/app_cache 에 5GB 파일을 몰래 생성함
+
+cat <<'EOF' > /root/linux-quiz/start_app.sh
 #!/bin/bash
 
-# 1. 권한 문제
-echo '#!/bin/bash' > /root/linux-quiz/start_app.sh
-echo 'echo "Application Started!"' >> /root/linux-quiz/start_app.sh
-chmod 644 /root/linux-quiz/start_app.sh 
+echo "[INFO] Starting Application..."
+echo "[INFO] Loading configurations..."
+sleep 1
 
-# 2. CPU 과부하 (Process 이름 숨김 없이 yes 사용)
-nohup yes > /dev/null 2>&1 &
+# 몰래 대용량 파일 생성 (함정 발동)
+# 경로: /var/log/app_cache/.temp_data_v1.img (숨김 파일)
+mkdir -p /var/log/app_cache
+echo "[WARN] Generating initial cache data..."
 
-# [Linux 문제 3] Disk Cleanup (1GB 대용량 파일 삭제)
-# 복잡한 계산 없이 고정된 1GB 파일 생성
-# 경로: /opt/legacy_app/backup.tar.gz (숨김 파일 아님, 그냥 일반 파일)
+# fallocate로 5GB 생성 (실패 시 dd 사용)
+if fallocate -l 5G /var/log/app_cache/.temp_data_v1.img 2>/dev/null; then
+    echo "[INFO] Cache initialized."
+else
+    echo "[INFO] Initializing legacy cache..."
+    dd if=/dev/zero of=/var/log/app_cache/.temp_data_v1.img bs=1M count=5120 status=none
+fi
 
-mkdir -p /opt/legacy_app
+echo "[SUCCESS] Application started successfully!"
+echo "------------------------------------------------"
+echo "Warning: Disk usage has increased significantly."
+EOF
 
-# 1GB(1024MB) 더미 파일 생성
-dd if=/dev/zero of=/opt/legacy_app/backup_v1.tar.gz bs=1M count=1024 status=none
+# [핵심] 실행 권한 제거 (Owner: RW, Group: R, Other: R)
+# 루트 유저라도 실행 권한(x)이 없으면 ./start_app.sh 실행 시 Permission denied 발생함
+chmod 644 /root/linux-quiz/start_app.sh
 
-# (참고) 이 방식은 디스크를 꽉 채우지 않으므로 시스템이 안전합니다.
+echo "Linux environment configured at $(date)" >> /root/setup_log.txt
