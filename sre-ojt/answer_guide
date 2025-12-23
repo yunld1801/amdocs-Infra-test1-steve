@@ -1,0 +1,97 @@
+[SRE Troubleshooting Challenge 정답 가이드]
+Part 1. Kubernetes Troubleshooting
+
+1. sre-test-01 (Pending: 노드 스케줄링 불가)
+증상: 파드 상태가 Pending이며 생성되지 않음.
+원인 분석:
+kubectl describe pod sre-test-01 확인 시 node01로 스케줄링되려 하지만 실패한다는 메시지 확인.
+kubectl get nodes 확인 시 node01의 상태가 **SchedulingDisabled**임.
+해결 방법: 노드의 Cordon(스케줄링 금지) 상태를 해제해야 함.
+정답 커맨드:
+Bash
+kubectl uncordon node01
+
+
+2. sre-test-02 (OOMKilled: 메모리 부족)
+증상: 파드가 실행 직후 죽으며 OOMKilled 상태가 됨.
+원인 분석:
+kubectl describe pod sre-test-02의 Events 확인.
+애플리케이션(stress)은 실행 시 250MB를 사용하도록 설정되어 있으나(--vm-bytes 250M), 컨테이너 제한(Limit)은 100Mi로 설정되어 있음.
+해결 방법: 메모리 Limit을 요구량보다 넉넉하게 늘려줌.
+정답 커맨드:
+Bash
+kubectl edit deployment sre-test-02
+# resources:
+#   limits:
+#     memory: "300Mi"  <-- 100Mi에서 300Mi 이상으로 변경
+
+
+3. sre-test-03 (Restarts: Liveness Probe 실패)
+증상: 파드가 Running 상태지만 RESTARTS 횟수가 계속 증가함.
+원인 분석:
+kubectl describe pod sre-test-03의 Events 확인 시 Liveness probe failed: Get ... connection refused 메시지 발생.
+컨테이너는 80번 포트를 사용 중인데, Probe 설정은 8080번 포트를 검사하고 있음.
+해결 방법: Liveness Probe 포트를 컨테이너 포트와 일치시킴.
+정답 커맨드:
+Bash
+kubectl edit deployment sre-test-03
+# livenessProbe:
+#   httpGet:
+#     port: 80  <-- 8080에서 80으로 변경
+
+
+4. sre-test-04 (Pending: CPU 요청 과다)
+증상: 파드 상태가 Pending이며 생성되지 않음.
+원인 분석:
+kubectl describe pod sre-test-04 확인 시 Insufficient cpu 메시지 확인.
+리소스 요청량(requests)이 cpu: "100" (100코어)으로 설정되어 있어, 이를 수용할 수 있는 노드가 없음.
+해결 방법: CPU 요청량을 현실적인 수치로 줄임.
+정답 커맨드:
+Bash
+kubectl edit deployment sre-test-04
+# resources:
+#   requests:
+#     cpu: "100m"  <-- "100"에서 "100m" (0.1코어) 등으로 변경
+
+
+5. sre-test-05 (CrashLoopBackOff: 명령어 오타)
+증상: 파드가 CrashLoopBackOff 상태로 반복적으로 에러 발생.
+원인 분석:
+kubectl logs deployment/sre-test-05 확인 시 /bin/sh: sleeeeeeeeep: not found 에러 발생.
+시작 명령어(command)에 오타가 있음.
+해결 방법: 명령어를 올바르게 수정.
+정답 커맨드:
+Bash
+kubectl edit deployment sre-test-05
+# command: ["sleep", "3600"]  <-- 오타 수정
+
+Part 2. Linux Troubleshooting
+
+1. Permission Denied (권한 문제)
+증상: ./start_app.sh 실행 시 Permission denied 발생.
+원인 분석:
+ls -l start_app.sh 확인 시 권한이 -rw-r--r--로 되어 있어 **실행 권한(x)**이 없음.
+(내부적으로 스크립트 상단에 if [ ! -x "$0" ] 트랩이 있어 sh로 실행해도 에러가 나도록 설계됨)
+해결 방법: 실행 권한을 부여하고 실행.
+정답 커맨드:
+Bash
+cd /root/linux-quiz
+chmod +x start_app.sh
+./start_app.sh
+
+
+2. Disk Cleanup (디스크 정리)
+증상: 1번 문제 해결 후 디스크 사용량이 급증함.
+원인 분석:
+start_app.sh 스크립트가 /var 경로 어딘가에 숨겨진 3GB 파일을 생성함.
+파일명이 .으로 시작하여 일반 ls로는 보이지 않음.
+해결 방법: du 또는 find 명령어로 대용량 파일을 찾아 삭제.
+정답 커맨드:
+Bash
+# 파일 찾기 (둘 중 하나 사용)
+du -ah /var | sort -rh | head -n 5
+# 또는
+find /var -type f -size +1G
+# (결과: /var/log/app_cache/.temp_data_v1.img 확인)
+# 파일 삭제
+rm /var/log/app_cache/.temp_data_v1.img
