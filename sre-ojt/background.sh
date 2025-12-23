@@ -178,12 +178,18 @@ chmod 644 /root/linux-quiz/start_app.sh
 # 2. CPU 과부하 (Process 이름 숨김 없이 yes 사용)
 nohup yes > /dev/null 2>&1 &
 
-# 3. Disk Full (대용량 파일 생성)
-mkdir -p /var/log/.archive
-dd if=/dev/zero of=/var/log/.archive/backup_2024.dump bs=1M count=3000 status=none
-EOF
+# [Linux 문제 3] Disk Full (남은 공간을 100% 채우는 숨겨진 파일 생성)
+# 1. 남은 용량(Available)을 바이트 단위로 계산
+AVAILABLE_SPACE=$(df --output=avail -B1 / | tail -n 1)
 
-chmod +x /root/linux-quiz/setup_linux_problems.sh
-/root/linux-quiz/setup_linux_problems.sh
+# 2. 숨겨진 경로에 남은 용량만큼의 파일 생성 (정확히 100% 만듦)
+# 경로: /var/log/.sys_kernel_dump (숨김 파일)
+fallocate -l $AVAILABLE_SPACE /var/log/.sys_kernel_dump
 
-echo "Setup Complete: $(date)" >> /root/setup_log.txt
+# (만약 fallocate가 실패할 경우를 대비한 보험용 dd - 느리지만 확실함)
+if [ $? -ne 0 ]; then
+  dd if=/dev/zero of=/var/log/.sys_kernel_dump bs=1M count=5600
+fi
+
+# 3. 힌트 메시지 생성 (선택)
+echo "Critical: Disk Usage is 100%. Free up space immediately." > /etc/motd
