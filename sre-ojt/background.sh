@@ -5,19 +5,26 @@ launch.sh
 
 echo "Configuring Cluster Environment..."
 
-# [필수] ControlPlane Taint 제거 
-# 이유: 문제 1번에서 node01을 잠글(Cordon) 것이므로, 
-# 나머지 파드(2~5번)가 정상적으로 스케줄링 되려면 마스터 노드가 열려있어야 함.
+# [설정 1] ControlPlane Taint 제거 
+# (이유: node01을 잠글 것이므로, 나머지 2~5번 파드들은 마스터 노드에서라도 실행되어야 함)
 kubectl taint nodes --all node-role.kubernetes.io/control-plane- 2>/dev/null
 kubectl taint nodes --all node-role.kubernetes.io/master- 2>/dev/null
 
+
+# [설정 2 - 중요] 배포 전에 미리 노드를 잠금(Cordon)
+# 그래야 1번 파드가 갈 곳이 없어서 Pending에 빠짐
+NODE_NAME=$(kubectl get nodes -o name | grep node01 | cut -d/ -f2)
+if [ ! -z "$NODE_NAME" ]; then
+  kubectl cordon $NODE_NAME
+fi
+
+
 # ==========================================
-# PART 1. Kubernetes 시나리오 (재정렬됨)
+# PART 1. Kubernetes 시나리오
 # ==========================================
 cat <<EOF > /root/broken-k8s.yaml
 # [문제 1] 노드 Cordon (Pending)
-# (구 6번 -> 신 1번)
-# node01이 잠겨있어서 배포가 안되는 상황
+# node01로만 가야 하는데(nodeSelector), node01이 잠겨(Cordon) 있어서 못 가는 상황
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,7 +41,7 @@ spec:
       labels:
         app: test-01
     spec:
-      # [중요] 마스터 노드로 도망가지 못하게 node01로 강제 지정
+      # [중요] 마스터 노드(Taint 풀림)로 도망가지 못하게 node01로 강제 지정
       nodeSelector:
         kubernetes.io/hostname: node01
       containers:
@@ -42,7 +49,6 @@ spec:
         image: nginx:alpine
 ---
 # [문제 2] OOMKilled
-# (구 1번 -> 신 2번)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -69,7 +75,6 @@ spec:
             memory: "100Mi"
 ---
 # [문제 3] Liveness Probe 실패
-# (구 2번 -> 신 3번)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -99,7 +104,6 @@ spec:
           periodSeconds: 3
 ---
 # [문제 4] CPU 요청 과다 (Pending)
-# (구 3번 -> 신 4번)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -124,8 +128,6 @@ spec:
             cpu: "100" 
 ---
 # [문제 5] 명령어 오타 (CrashLoopBackOff)
-# (구 4번 -> 신 5번)
-# (구 5번 ImagePull 문제는 삭제됨)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -148,14 +150,9 @@ spec:
         command: ["sleeeeeeeeep", "3600"]
 EOF
 
-# 배포 실행
+# [설정 3] 문제 배포 (이제 apply하면 1번 파드는 들어갈 곳이 없어 Pending 됨)
 kubectl apply -f /root/broken-k8s.yaml
 
-# [문제 1번 설정] 노드 Cordon 처리
-NODE_NAME=$(kubectl get nodes -o name | grep node01 | cut -d/ -f2)
-if [ ! -z "$NODE_NAME" ]; then
-  kubectl cordon $NODE_NAME
-fi
 
 # ====================================================
 # PART 2. Linux Scenarios Setup
@@ -176,11 +173,11 @@ echo "[INFO] Starting Application..."
 echo "[INFO] Loading configurations..."
 sleep 1
 
-# 몰래 대용량 파일 생성 (5GB)
+# 몰래 대용량 파일 생성 (3GB)
 mkdir -p /var/log/app_cache
 echo "[WARN] Generating initial cache data..."
 
-dd if=/dev/zero of=/var/log/app_cache/.temp_data_v1.img bs=1M count=5120 status=progress
+dd if=/dev/zero of=/var/log/app_cache/.temp_data_v1.img bs=1M count=3072 status=progress
 
 echo ""
 echo "[SUCCESS] Application started successfully!"
