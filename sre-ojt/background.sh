@@ -12,7 +12,7 @@ cat <<EOF > /root/broken-k8s.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sre-test-01-oom
+  name: sre-test-01
   labels:
     app: stress-test
 spec:
@@ -39,7 +39,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sre-test-02-probe
+  name: sre-test-02
   labels:
     app: nginx-broken-probe
 spec:
@@ -69,7 +69,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sre-test-03-cpu
+  name: sre-test-03
   labels:
     app: heavy-app
 spec:
@@ -94,7 +94,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sre-test-04-typo
+  name: sre-test-04
   labels:
     app: typo-app
 spec:
@@ -117,7 +117,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sre-test-05-image
+  name: sre-test-05
   labels:
     app: wrong-image
 spec:
@@ -139,7 +139,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sre-test-06-node
+  name: sre-test-06
   labels:
     app: maintenance-app
 spec:
