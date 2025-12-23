@@ -178,15 +178,22 @@ chmod 644 /root/linux-quiz/start_app.sh
 # 2. CPU 과부하 (Process 이름 숨김 없이 yes 사용)
 nohup yes > /dev/null 2>&1 &
 
-# [Linux 문제 3] Disk Usage (5GB 대용량 파일 찾기)
-# /var/log 디렉토리 깊숙한 곳에 5GB짜리 숨겨진 파일 생성
-# 파일명 앞에 .을 붙여서 'ls'로는 안 보이게 함
-
+# [Linux 문제 3] Disk Usage (남은 공간의 90%를 채우는 대용량 파일 생성)
 mkdir -p /var/log/sys_audit
-# fallocate는 디스크 공간을 즉시 할당합니다 (속도 매우 빠름)
-fallocate -l 5G /var/log/sys_audit/.kernel_dump_2024.img
 
-# 만약 fallocate가 지원되지 않는 환경일 경우 dd로 생성 (예비용)
-if [ ! -f /var/log/sys_audit/.kernel_dump_2024.img ]; then
-    dd if=/dev/zero of=/var/log/sys_audit/.kernel_dump_2024.img bs=1M count=5120 status=none
-fi
+# 1. /var 경로의 남은 용량(Available)을 KB 단위로 확인
+AVAILABLE_KB=$(df --output=avail /var | tail -n 1)
+
+# 2. 남은 용량의 90%를 계산 (Bash 산술 연산)
+# (Available * 0.9)
+FILL_SIZE_KB=$((AVAILABLE_KB * 90 / 100))
+
+# 3. KB를 MB로 변환 (dd 명령어를 위해)
+FILL_SIZE_MB=$((FILL_SIZE_KB / 1024))
+
+# 4. dd 명령어로 실제 공간을 차지하는 0(zero) 데이터 쓰기
+# (fallocate보다 느리지만, 디스크 점유율 확실하게 올림)
+dd if=/dev/zero of=/var/log/sys_audit/.kernel_dump_2024.img bs=1M count=$FILL_SIZE_MB status=none
+
+# 5. 확인용 로그 (나중에 디버깅용)
+echo "Filled ${FILL_SIZE_MB}MB file to simulate disk pressure." >> /root/setup_log.txt
