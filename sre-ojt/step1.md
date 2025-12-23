@@ -1,6 +1,6 @@
 **Amdocs DevOps Troubleshooting Challenge**
 
-## Part 1. Kubernetes
+**Part 1. Kubernetes**
 Applications in the cluster are failing to start. Troubleshoot the cluster and restore all pods to a `Running` state.
 
 Q1. sre-test-01: Pod cannot find a schedulable node. (`Pending`)
@@ -11,7 +11,7 @@ Q3. sre-test-03: Pod restarts continuously.
 Q4. sre-test-04: Pod is stuck in pending state.
 Q5. sre-test-05: Pod enters error state.
 
-## Part 2. Linux (Chained Scenarios)
+**Part 2. Linux (Chained Scenarios)**
 Navigate to `/root/linux-quiz` and solve the issues in order.
 
 **Q1. Permission Denied**
