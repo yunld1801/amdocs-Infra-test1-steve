@@ -7,8 +7,11 @@ Q1. sre-test-01: Pod cannot find a schedulable node. (`Pending`)
 **Hint**: Check the node status (`kubectl get nodes`).
 
 Q2. sre-test-02: Pod terminates immediately after startup.
+
 Q3. sre-test-03: Pod restarts continuously.
+
 Q4. sre-test-04: Pod is stuck in pending state.
+
 Q5. sre-test-05: Pod enters error state.
 
 **Part 2. Linux (Chained Scenarios)**
