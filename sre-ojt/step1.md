@@ -1,5 +1,7 @@
 **Amdocs DevOps Troubleshooting Challenge**
 
+**DO NOT USE AI, and please complete this task within a day and send an email.**
+
 **Part 1. Kubernetes**
 Applications in the cluster are failing to start. Troubleshoot the cluster and restore all pods to a `Running` state.
 
@@ -20,7 +22,6 @@ Navigate to `/root/linux-quiz` and solve the issues in order.
 **Q1. Permission Denied**
 Attempt to start the application using exactly this command: `./start_app.sh`
 - Symptom: The command fails with `Permission denied`.
-- Constraint: Do not use `sh` or `bash` to run the script.
 - Goal: Fix the file permissions and execute the script successfully.
 
 **Q2. Disk Cleanup**
@@ -32,8 +33,6 @@ Upon successful execution of Task 1, the script generates a large hidden cache f
 
 **Submission**
 Upon completion, please email me and Bhaskar the **root cause** and **solution** for each issue.
-
-**DO NOT USE AI, and please complete this task within a day and send an email.**
 
 Additionally, run the following commands and attach a screenshot of your terminal session:
 1. `history`
