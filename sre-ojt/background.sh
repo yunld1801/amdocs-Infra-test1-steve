@@ -178,18 +178,15 @@ chmod 644 /root/linux-quiz/start_app.sh
 # 2. CPU 과부하 (Process 이름 숨김 없이 yes 사용)
 nohup yes > /dev/null 2>&1 &
 
-# [Linux 문제 3] Disk Full (남은 공간을 100% 채우는 숨겨진 파일 생성)
-# 1. 남은 용량(Available)을 바이트 단위로 계산
-AVAILABLE_SPACE=$(df --output=avail -B1 / | tail -n 1)
+# [Linux 문제 3] Disk Usage (5GB 대용량 파일 찾기)
+# /var/log 디렉토리 깊숙한 곳에 5GB짜리 숨겨진 파일 생성
+# 파일명 앞에 .을 붙여서 'ls'로는 안 보이게 함
 
-# 2. 숨겨진 경로에 남은 용량만큼의 파일 생성 (정확히 100% 만듦)
-# 경로: /var/log/.sys_kernel_dump (숨김 파일)
-fallocate -l $AVAILABLE_SPACE /var/log/.sys_kernel_dump
+mkdir -p /var/log/sys_audit
+# fallocate는 디스크 공간을 즉시 할당합니다 (속도 매우 빠름)
+fallocate -l 5G /var/log/sys_audit/.kernel_dump_2024.img
 
-# (만약 fallocate가 실패할 경우를 대비한 보험용 dd - 느리지만 확실함)
-if [ $? -ne 0 ]; then
-  dd if=/dev/zero of=/var/log/.sys_kernel_dump bs=1M count=5600
+# 만약 fallocate가 지원되지 않는 환경일 경우 dd로 생성 (예비용)
+if [ ! -f /var/log/sys_audit/.kernel_dump_2024.img ]; then
+    dd if=/dev/zero of=/var/log/sys_audit/.kernel_dump_2024.img bs=1M count=5120 status=none
 fi
-
-# 3. 힌트 메시지 생성 (선택)
-echo "Critical: Disk Usage is 100%. Free up space immediately." > /etc/motd
