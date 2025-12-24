@@ -1,6 +1,6 @@
 **Amdocs DevOps Troubleshooting Challenge**
 
-**DO NOT USE AI, and please complete this task within a day and send an email.**
+**DO NOT USE AI**
 
 **Part 1. Kubernetes**
 Applications in the cluster are failing to start. Troubleshoot the cluster and restore all pods to a `Running` state.
