@@ -1,5 +1,3 @@
-#!/bin/bash
-
 
 # =================================================================
 # [설정] Slack Webhook URL을 '정확히' 붙여넣으세요.
@@ -69,3 +67,41 @@ upload_audit_log() {
 trap upload_audit_log EXIT SIGHUP SIGTERM
 
 
+EOF
+
+
+source /etc/profile
+
+
+
+
+# ----------------------------------------------------
+# PART 2. Kubernetes Setup (Namespace: OJT)
+# ----------------------------------------------------
+
+
+# [수정] OJT 네임스페이스 생성
+kubectl create namespace OJT
+
+
+# Taint 제거
+kubectl taint nodes --all node-role.kubernetes.io/control-plane- 2>/dev/null
+kubectl taint nodes --all node-role.kubernetes.io/master- 2>/dev/null
+
+
+# 노드 잠금
+NODE_NAME=\$(kubectl get nodes -o name | grep node01 | cut -d/ -f2)
+if [ ! -z "\$NODE_NAME" ]; then
+  kubectl cordon \$NODE_NAME
+fi
+
+
+# [수정] 모든 리소스에 namespace: OJT 추가
+cat <<EOF > /root/broken-k8s.yaml
+# [문제 1] 노드 Cordon (Pending)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sre-test-01
+  namespace: OJT
+  labels:
