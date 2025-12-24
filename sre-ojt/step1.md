@@ -25,18 +25,17 @@ Attempt to start the application using exactly this command: `./start_app.sh`
 - Goal: Fix the file permissions and execute the script successfully.
 
 **Q2. Disk Cleanup**
-Upon successful execution of Task 1, the script generates a large hidden cache file (approx. **5GB**).
+Upon successful execution of Question.1 in Linux part, the script generates a large hidden cache file (approx. **5GB**).
 - Symptom: Disk usage in `/var` has increased significantly.
 - Goal: Locate the hidden large file within the `/var` directory and delete it. (Hint: The file name starts with `.`)
 
 ---
 
 **Submission**
-Upon completion, please email me and Bhaskar the **root cause** and **solution** for each issue.
+Upon completion, please email me and Bhaskar the **root cause** and **solution** for each issue with screenshot.
 
 Additionally, run the following commands and attach a screenshot of your terminal session:
-1. `history`
-2. `kubectl get pods`
+1. `kubectl get pods`
 
 _Made by Steve_
 
