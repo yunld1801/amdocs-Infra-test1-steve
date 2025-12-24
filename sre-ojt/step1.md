@@ -32,7 +32,7 @@ Upon successful execution of Question.1 in Linux part, the script generates a la
 ---
 
 **Submission**
-Upon completion, please email me and Bhaskar the **root cause** and **solution** for each issue with screenshot.
+Upon completion, please email **me and Bhaskar** the **root cause** and **solution** for each issue with screenshot.
 
 Additionally, run the following commands and attach a screenshot of your terminal session:
 1. `kubectl get pods`
