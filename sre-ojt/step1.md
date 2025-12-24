@@ -1,4 +1,4 @@
-**Amdocs DevOps Troubleshooting Challenge**
+**Amdocs DevOps Troubleshooting Challenge for DongWoo**
 
 **DO NOT USE AI**
 
@@ -36,6 +36,7 @@ Upon completion, please email me and Bhaskar the **root cause** and **solution**
 
 Additionally, run the following commands and attach a screenshot of your terminal session:
 1. `kubectl get pods`
+2. `history`
 
 _Made by Steve_
 
